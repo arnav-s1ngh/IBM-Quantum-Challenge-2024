@@ -21,8 +21,6 @@ from qiskit_aer import AerSimulator, Aer
 from qc_grader.challenges.iqc_2024 import grade_lab1_ex2
 
 #Question-2
-
-# Create a quantum circuit with two qubits
 qc = QuantumCircuit(2)
 qc.h(0)
 qc.cx(0, 1)
@@ -30,10 +28,9 @@ qc.x(1)
 qc.z(1)
 qc.measure_all()
 qc.draw('mpl')
-
-statevector_sampler = StatevectorSampler()
-job_sampler = statevector_sampler.run([qc])
-result_sampler = job_sampler.result()
-counts_sampler = result_sampler[0].data.meas.get_counts()
+statevector_sampler=StatevectorSampler()
+job_sampler=statevector_sampler.run([qc])
+result_sampler=job_sampler.result()
+counts_sampler=result_sampler[0].data.meas.get_counts()
 print(counts_sampler)
 grade_lab1_ex2(job_sampler)
