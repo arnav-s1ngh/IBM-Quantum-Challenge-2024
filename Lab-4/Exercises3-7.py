@@ -30,7 +30,6 @@ from qiskit_ibm_runtime import (
     EstimatorOptions
 )
 
-# qc-grader should be 0.18.12 (or higher)
 import qc_grader
 
 qc_grader.__version__
@@ -50,20 +49,14 @@ import numpy as np
 import pandas as pd
 import numpy as np
 
-# Define num_qubits
 num_qubits = 5
 
-# Load the dataset
 birds_dataset = pd.read_csv('birds_dataset.csv')
-# Convert coefficients to complex numbers
 for i in range(2**num_qubits):
     key = 'c%.0f' % i
     birds_dataset[key] = birds_dataset[key].astype(np.complex128)
 
-# Print the dataset to verify (optional)
 print(birds_dataset)
-
-# Retrieve the coefficients of each quantum state
 list_coefficients = birds_dataset[['c%.0f' % i for i in range(2**num_qubits)]].values.tolist()
 list_labels = []
 for name in birds_dataset['names']:
@@ -77,15 +70,10 @@ num_qubits=5
 reps=1
 entanglement='full'
 ansatz=RealAmplitudes(num_qubits=num_qubits, reps=reps, entanglement=entanglement)
-
-# Define the observable
 obs = SparsePauliOp("ZZZZZ")
-# Define the estimator and pass manager
-estimator = StatevectorEstimator()  # To train we use StatevectorEstimator to get the exact simulation
+estimator = StatevectorEstimator()  
 pm = generate_preset_pass_manager(backend=AerSimulator(), optimization_level=3, seed_transpiler=0)
 
-
-# Define the cost function
 def cost_func(params, list_coefficients, list_labels, ansatz, obs, estimator, pm, callback_dict):
     """Return cost function for optimization
 
@@ -106,27 +94,19 @@ def cost_func(params, list_coefficients, list_labels, ansatz, obs, estimator, pm
     cost = 0
     for amplitudes, label in zip(list_coefficients, list_labels):
         qc = QuantumCircuit(num_qubits)
-        # Amplitude embedding
         qc.initialize(amplitudes)
-        # Compose initial state + ansatz
         classifier = qc.compose(ansatz)
-        # Transpile classifier
         transpiled_classifier = pm.run(classifier)
-        # Transpile observable
         transpiled_obs = obs.apply_layout(layout=transpiled_classifier.layout)
-        # Run estimator
         pub = (transpiled_classifier, transpiled_obs, params)
         job = estimator.run([pub])
-        # Get result
         result = job.result()[0].data.evs
-        # Compute cost function (cumulative)
         cost += np.abs(result - label)
 
     callback_dict["iters"] += 1
     callback_dict["prev_vector"] = params
     callback_dict["cost_history"].append(cost)
 
-    # Print the iterations to screen on a single line
     print(
         "Iters. done: {} [Current cost: {}]".format(callback_dict["iters"], cost),
         end="\r",
@@ -136,35 +116,30 @@ def cost_func(params, list_coefficients, list_labels, ansatz, obs, estimator, pm
     return cost
 
 
-# Intialize the lists to store the results from different runs
 cost_history_list = []
 res_list = []
 
-# Retrieve the initial parameters
 params_0_list = np.load("params_0_list.npy")
 
 for it, params_0 in enumerate(params_0_list):
     print('Iteration number: ', it)
 
-    # Initialize a callback dictionary
     callback_dict = {
         "prev_vector": None,
         "iters": 0,
         "cost_history": [],
     }
 
-    # Minimize the cost function using scipy
+
     res = minimize(
         cost_func,
         params_0,
         args=(list_coefficients, list_labels, ansatz, obs, estimator, pm, callback_dict),
-        method="cobyla",  # Classical optimizer
-        options={'maxiter': 200})  # Maximum number of iterations
+        method="cobyla",  
+        options={'maxiter': 200})  
 
-    # Print the results after convergence
     print(res)
 
-    # Save the results from different runs
     res_list.append(res)
     cost_history_list.append(callback_dict["cost_history"])
 
@@ -210,7 +185,6 @@ def update_error_rate(backend, error_rates):
     if "default_duration" in error_rates:
         default_duration = error_rates["default_duration"]
 
-    # Update the 1-qubit gate properties
     for i in range(backend.num_qubits):
         qarg = (i,)
         if "rz_error" in error_rates:
@@ -229,7 +203,6 @@ def update_error_rate(backend, error_rates):
                                                          InstructionProperties(error=error_rates["measure_error"],
                                                                                duration=default_duration))
 
-            # Update the 2-qubit gate properties (CX gate) for all edges in the chosen coupling map
     if "cx_error" in error_rates:
         for edge in backend.coupling_map:
             backend.target.update_instruction_properties('cx', tuple(edge),
@@ -318,31 +291,27 @@ def amplitude_embedding(num_qubits, bird_index):
     return qc
 
 
-index_bird = 0 # You can check different birds by changing the index
+index_bird = 0 
 
-# Build the amplitude embedding
 qc = amplitude_embedding(num_qubits, index_bird)
 qc.measure_all()
 
-# Define the backend and the pass manager
 aer_sim = AerSimulator()
 pm = generate_preset_pass_manager(backend=aer_sim, optimization_level=3)
 isa_circuit = pm.run(qc)
 
-# Define the sampler with the number of shots
 sampler = Sampler(backend=aer_sim)
 result = sampler.run([isa_circuit]).result()
 samp_dist = result[0].data.meas.get_counts()
 plot_distribution(samp_dist, figsize=(15, 5))
 
-index_bird = 0 #You can check different birds by changing the index
+index_bird = 0
 qc = amplitude_embedding(num_qubits, index_bird)
 pm = generate_preset_pass_manager(optimization_level=3, backend=fake_backend)
 transpiled_qc = pm.run(qc)
 
 print('Depth of two-qubit gates: ', transpiled_qc.depth(lambda x: len(x.qubits) == 2))
 transpiled_qc.draw(output="mpl", fold=False, idle_wires=False)
-# Submit your answer using following code
 
 old_ansatz = RealAmplitudes(num_qubits, reps=1, entanglement='full', insert_barriers=True)
 pm = generate_preset_pass_manager(optimization_level=3, backend=fake_backend)
