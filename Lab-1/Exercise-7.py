@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 from qiskit import QuantumCircuit, transpile
 import os
-os.environ['QXToken'] = "aaea3f1f6d5e039325611b0141a47f6618f363ec3fea4eb04419baae7aa12480565e0c3adc51c57cb02eb94e44af3e94dd6f5349838de27ea47401c3b2975d4e"
+os.environ['QXToken'] = "Paste_Your_Token_Here"
 import numpy as np
 from typing import List, Callable
 from scipy.optimize import minimize
